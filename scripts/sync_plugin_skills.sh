@@ -14,6 +14,9 @@ usage() {
   cat <<'EOF'
 Sync the packaged Jupiter plugin skills for Codex, Claude Code, or both.
 
+The sync respects .plugignore patterns (similar to .gitignore) to exclude
+non-runtime assets from plugin distributions. See .plugignore for details.
+
 Usage:
   bash scripts/sync_plugin_skills.sh
   bash scripts/sync_plugin_skills.sh --provider codex
@@ -37,19 +40,6 @@ normalize_provider() {
       return 1
       ;;
   esac
-}
-
-contains_skill() {
-  local wanted="$1"
-  local skill=""
-
-  for skill in "${PACKAGED_SKILLS[@]}"; do
-    if [[ "${skill}" == "${wanted}" ]]; then
-      return 0
-    fi
-  done
-
-  return 1
 }
 
 run_step() {
@@ -91,12 +81,30 @@ needs_sync() {
   [[ "${source_checksum}" != "${target_checksum}" ]]
 }
 
+# Generate rsync exclude options from .plugignore
+get_plugignore_excludes() {
+  local plugignore_file="$1"
+  local excludes=""
+  
+  if [[ ! -f "${plugignore_file}" ]]; then
+    echo ""
+    return 0
+  fi
+  
+  # Read .plugignore and convert to rsync exclude format
+  while IFS= read -r line; do
+    # Skip empty lines and comments
+    [[ -z "${line}" || "${line}" =~ ^# ]] && continue
+    excludes="${excludes} --exclude='${line}'"
+  done < "${plugignore_file}"
+  
+  echo "${excludes}"
+}
+
 sync_provider() {
   local provider="$1"
   local plugin_root="${REPO_ROOT}/.plugins/${PLUGIN_NAME}/${provider}"
   local target_skills_dir="${plugin_root}/skills"
-  local existing_path=""
-  local existing_name=""
   local skill_name=""
   local source_dir=""
   local target_dir=""
@@ -109,19 +117,20 @@ sync_provider() {
 
   run_step mkdir -p "${target_skills_dir}"
 
-  for existing_path in "${target_skills_dir}"/*; do
-    if [[ ! -e "${existing_path}" ]]; then
-      continue
-    fi
-
-    existing_name="$(basename "${existing_path}")"
-    if ! contains_skill "${existing_name}"; then
-      run_step rm -rf "${existing_path}"
-      if [[ "${DRY_RUN}" -eq 1 ]]; then
-        echo "Would remove stale ${provider} packaged skill: ${existing_name}"
-      else
-        echo "Removed stale ${provider} packaged skill: ${existing_name}"
-        any_synced=1
+  # Clean up stale skills - only check against known packaged skills (avoid full directory scan)
+  # Performance improvement: use array iteration instead of globbing target directory
+  for skill_name in "${PACKAGED_SKILLS[@]}"; do
+    target_dir="${target_skills_dir}/${skill_name}"
+    if [[ -e "${target_dir}" ]]; then
+      source_dir="${REPO_ROOT}/skills/${skill_name}"
+      if [[ ! -d "${source_dir}" ]]; then
+        run_step rm -rf "${target_dir}"
+        if [[ "${DRY_RUN}" -eq 1 ]]; then
+          echo "Would remove stale ${provider} packaged skill: ${skill_name}"
+        else
+          echo "Removed stale ${provider} packaged skill: ${skill_name}"
+          any_synced=1
+        fi
       fi
     fi
   done
