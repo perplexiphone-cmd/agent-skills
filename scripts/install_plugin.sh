@@ -163,7 +163,6 @@ install_codex() {
   local should_copy=1
   local marketplace_action="added"
   local marketplace_dir=""
-  local entry_json=""
   local tmp_file=""
 
   if [[ ! -f "${manifest_path}" ]]; then
@@ -213,10 +212,15 @@ install_codex() {
     fi
   fi
 
-  entry_json="$(jq -n \
-    --arg plugin_name "${PLUGIN_NAME}" \
-    --arg plugin_category "${PLUGIN_CATEGORY}" \
-    '{
+  tmp_file="$(mktemp)"
+  local jq_args=(
+    --arg marketplace_name "${CODEX_MARKETPLACE_NAME}"
+    --arg marketplace_display_name "${CODEX_MARKETPLACE_DISPLAY_NAME}"
+    --arg plugin_name "${PLUGIN_NAME}"
+    --arg plugin_category "${PLUGIN_CATEGORY}"
+  )
+  local jq_filter='
+    {
       name: $plugin_name,
       source: {
         source: "local",
@@ -227,16 +231,8 @@ install_codex() {
         authentication: "ON_INSTALL"
       },
       category: $plugin_category
-    }'
-  )"
-
-  tmp_file="$(mktemp)"
-  jq \
-    --arg marketplace_name "${CODEX_MARKETPLACE_NAME}" \
-    --arg marketplace_display_name "${CODEX_MARKETPLACE_DISPLAY_NAME}" \
-    --arg plugin_name "${PLUGIN_NAME}" \
-    --argjson entry "${entry_json}" \
-    '
+    } as $entry
+    |
     if . == null then
       {
         name: $marketplace_name,
@@ -274,9 +270,13 @@ install_codex() {
             $plugins + [$entry]
           end
       )
-    ' \
-    "$(if [[ -f "${marketplace_path}" ]]; then cat "${marketplace_path}"; else printf 'null'; fi)" \
-    > "${tmp_file}"
+    '
+
+  if [[ -f "${marketplace_path}" ]]; then
+    jq "${jq_args[@]}" "${jq_filter}" "${marketplace_path}" > "${tmp_file}"
+  else
+    jq -n "${jq_args[@]}" "${jq_filter}" > "${tmp_file}"
+  fi
 
   mv "${tmp_file}" "${marketplace_path}"
 
