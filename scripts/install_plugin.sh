@@ -15,6 +15,9 @@ CODEX_INSTALL_DIR="${HOME}/plugins"
 CODEX_MARKETPLACE_PATH="${HOME}/.agents/plugins/marketplace.json"
 CLAUDE_SCOPE="user"
 
+HAS_JQ=0
+HAS_CLAUDE=0
+
 usage() {
   cat <<'EOF'
 Install the Jupiter plugin for Codex, Claude Code, or both.
@@ -105,7 +108,7 @@ prompt_provider() {
 read_json_name() {
   local file_path="$1"
 
-  if command -v jq >/dev/null 2>&1; then
+  if [[ ${HAS_JQ} -eq 1 ]]; then
     jq -r '.name // empty' "${file_path}"
   else
     sed -n 's/^[[:space:]]*"name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "${file_path}" | head -n 1
@@ -113,7 +116,7 @@ read_json_name() {
 }
 
 require_jq() {
-  if ! command -v jq >/dev/null 2>&1; then
+  if [[ ${HAS_JQ} -eq 0 ]]; then
     echo "jq is required for Codex installs." >&2
     exit 1
   fi
@@ -138,7 +141,7 @@ read_claude_marketplace_source_path() {
     return 0
   fi
 
-  if command -v jq >/dev/null 2>&1; then
+  if [[ ${HAS_JQ} -eq 1 ]]; then
     jq -r --arg marketplace_name "${marketplace_name}" '.[$marketplace_name].source.path // empty' "${state_path}"
   else
     awk -v marketplace="\"${marketplace_name}\"" '
@@ -302,7 +305,7 @@ install_claude() {
   local install_output=""
   local existing_source_path=""
 
-  if ! command -v claude >/dev/null 2>&1; then
+  if [[ ${HAS_CLAUDE} -eq 0 ]]; then
     echo "The Claude CLI is required for Claude installs." >&2
     exit 1
   fi
@@ -357,7 +360,7 @@ install_claude() {
   fi
 
   plugin_id="${PLUGIN_NAME}@${marketplace_name}"
-  if command -v jq >/dev/null 2>&1 && [[ -f "${HOME}/.claude/plugins/installed_plugins.json" ]]; then
+  if [[ ${HAS_JQ} -eq 1 ]] && [[ -f "${HOME}/.claude/plugins/installed_plugins.json" ]]; then
     if jq -e --arg plugin_id "${plugin_id}" '.plugins[$plugin_id] != null' "${HOME}/.claude/plugins/installed_plugins.json" >/dev/null; then
       plugin_action="updated"
     fi
@@ -431,6 +434,14 @@ done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Cache command availability to avoid repeated subprocess calls
+if command -v jq >/dev/null 2>&1; then
+  HAS_JQ=1
+fi
+if command -v claude >/dev/null 2>&1; then
+  HAS_CLAUDE=1
+fi
 
 if [[ -z "${PROVIDER}" ]]; then
   if [[ "${INTERACTIVE}" -eq 1 ]]; then
