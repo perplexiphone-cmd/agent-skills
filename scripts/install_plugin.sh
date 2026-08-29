@@ -14,6 +14,7 @@ PROVIDER=""
 CODEX_INSTALL_DIR="${HOME}/plugins"
 CODEX_MARKETPLACE_PATH="${HOME}/.agents/plugins/marketplace.json"
 CLAUDE_SCOPE="user"
+HAS_JQ=""
 
 usage() {
   cat <<'EOF'
@@ -102,10 +103,21 @@ prompt_provider() {
   done
 }
 
+check_jq_available() {
+  if [[ -z "${HAS_JQ}" ]]; then
+    if command -v jq >/dev/null 2>&1; then
+      HAS_JQ=1
+    else
+      HAS_JQ=0
+    fi
+  fi
+  [[ "${HAS_JQ}" -eq 1 ]]
+}
+
 read_json_name() {
   local file_path="$1"
 
-  if command -v jq >/dev/null 2>&1; then
+  if check_jq_available; then
     jq -r '.name // empty' "${file_path}"
   else
     sed -n 's/^[[:space:]]*"name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "${file_path}" | head -n 1
@@ -113,7 +125,7 @@ read_json_name() {
 }
 
 require_jq() {
-  if ! command -v jq >/dev/null 2>&1; then
+  if ! check_jq_available; then
     echo "jq is required for Codex installs." >&2
     exit 1
   fi
@@ -138,7 +150,7 @@ read_claude_marketplace_source_path() {
     return 0
   fi
 
-  if command -v jq >/dev/null 2>&1; then
+  if check_jq_available; then
     jq -r --arg marketplace_name "${marketplace_name}" '.[$marketplace_name].source.path // empty' "${state_path}"
   else
     awk -v marketplace="\"${marketplace_name}\"" '
