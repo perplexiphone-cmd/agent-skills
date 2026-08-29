@@ -164,6 +164,8 @@ install_codex() {
   local marketplace_action="added"
   local marketplace_dir=""
   local tmp_file=""
+  local source_checksum=""
+  local target_checksum=""
 
   if [[ ! -f "${manifest_path}" ]]; then
     echo "Codex plugin manifest not found: ${manifest_path}" >&2
@@ -171,11 +173,19 @@ install_codex() {
   fi
 
   if [[ -e "${target_dir}" ]]; then
-    if [[ "${FORCE}" -eq 1 ]]; then
+    # Quick check: compare checksums to see if update is actually needed
+    source_checksum="$(find "${source_dir}" -type f -exec md5sum {} \; 2>/dev/null | sort | md5sum | cut -d' ' -f1 || echo "1")"
+    target_checksum="$(find "${target_dir}" -type f -exec md5sum {} \; 2>/dev/null | sort | md5sum | cut -d' ' -f1 || echo "2")"
+    
+    if [[ "${source_checksum}" == "${target_checksum}" ]] && [[ "${FORCE}" -ne 1 ]]; then
+      # Plugin files are already up-to-date
+      plugin_action="already up-to-date"
+      should_copy=0
+    elif [[ "${FORCE}" -eq 1 ]]; then
       rm -rf "${target_dir}"
       plugin_action="updated"
     elif [[ "${INTERACTIVE}" -eq 1 ]]; then
-      if confirm "Codex plugin already exists at ${target_dir}. Replace it? [y/N]" "N"; then
+      if confirm "Codex plugin is outdated at ${target_dir}. Replace it? [y/N]" "N"; then
         rm -rf "${target_dir}"
         plugin_action="updated"
       else
@@ -283,8 +293,10 @@ install_codex() {
   if [[ "${should_copy}" -eq 1 ]]; then
     echo "Codex plugin ${plugin_action} at ${target_dir}"
   else
-    echo "Codex plugin ${plugin_action} at ${target_dir}; marketplace registration was still checked."
-    echo "Use --force to replace the existing plugin files."
+    echo "Codex plugin ${plugin_action} at ${target_dir}; skipping file copy."
+    if [[ "${plugin_action}" != "already up-to-date" ]]; then
+      echo "Use --force to replace the existing plugin files."
+    fi
   fi
   echo "Codex marketplace entry ${marketplace_action} in ${marketplace_path}"
   echo "Restart Codex, open /plugins, and install \`${PLUGIN_NAME}\` from your local marketplace."

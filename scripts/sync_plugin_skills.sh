@@ -61,6 +61,36 @@ run_step() {
   "$@"
 }
 
+# Compute checksum of a directory to detect changes
+compute_dir_checksum() {
+  local dir="$1"
+  
+  if [[ ! -d "${dir}" ]]; then
+    echo "0"
+    return
+  fi
+  
+  # Use find + md5sum for portable checksum (Linux/macOS compatible)
+  if command -v md5sum >/dev/null 2>&1; then
+    find "${dir}" -type f -exec md5sum {} \; | sort | md5sum | cut -d' ' -f1
+  elif command -v md5 >/dev/null 2>&1; then
+    find "${dir}" -type f -exec md5 {} \; | sort | md5 | cut -d' ' -f1
+  else
+    echo "1"  # Fallback: always sync if no checksum tool available
+  fi
+}
+
+# Check if a sync is actually needed by comparing checksums
+needs_sync() {
+  local source="$1"
+  local target="$2"
+  
+  local source_checksum="$(compute_dir_checksum "${source}")"
+  local target_checksum="$(compute_dir_checksum "${target}")"
+  
+  [[ "${source_checksum}" != "${target_checksum}" ]]
+}
+
 sync_provider() {
   local provider="$1"
   local plugin_root="${REPO_ROOT}/.plugins/${PLUGIN_NAME}/${provider}"
@@ -70,6 +100,7 @@ sync_provider() {
   local skill_name=""
   local source_dir=""
   local target_dir=""
+  local any_synced=0
 
   if [[ ! -d "${plugin_root}" ]]; then
     echo "Plugin provider directory not found: ${plugin_root}" >&2
@@ -90,6 +121,7 @@ sync_provider() {
         echo "Would remove stale ${provider} packaged skill: ${existing_name}"
       else
         echo "Removed stale ${provider} packaged skill: ${existing_name}"
+        any_synced=1
       fi
     fi
   done
@@ -103,14 +135,15 @@ sync_provider() {
       exit 1
     fi
 
-    # Only copy if target doesn't exist or is different from source
-    if [[ ! -e "${target_dir}" ]] || ! diff -r "${source_dir}" "${target_dir}" >/dev/null 2>&1; then
+    # Use checksum to detect if sync is needed (more efficient than always running diff -r)
+    if needs_sync "${source_dir}" "${target_dir}"; then
       run_step rm -rf "${target_dir}"
       run_step cp -R "${source_dir}" "${target_dir}"
       if [[ "${DRY_RUN}" -eq 1 ]]; then
         echo "Would sync ${provider} packaged skill: ${skill_name}"
       else
         echo "Synced ${provider} packaged skill: ${skill_name}"
+        any_synced=1
       fi
     else
       if [[ "${DRY_RUN}" -eq 1 ]]; then
@@ -120,12 +153,15 @@ sync_provider() {
       fi
     fi
   done
+  
+  return ${any_synced}
 }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 DRY_RUN=0
 PROVIDER="both"
+SYNC_OCCURRED=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -166,12 +202,21 @@ fi
 case "${PROVIDER}" in
   codex)
     sync_provider "codex"
+    SYNC_OCCURRED=$?
     ;;
   claude)
     sync_provider "claude"
+    SYNC_OCCURRED=$?
     ;;
   both)
     sync_provider "codex"
+    SYNC_OCCURRED=$?
     sync_provider "claude"
+    if [[ $? -eq 1 ]]; then
+      SYNC_OCCURRED=1
+    fi
     ;;
 esac
+
+# Exit with status indicating whether any sync occurred
+exit ${SYNC_OCCURRED}
