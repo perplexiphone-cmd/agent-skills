@@ -103,15 +103,21 @@ sync_provider() {
       exit 1
     fi
 
-    if [[ -e "${target_dir}" ]]; then
+    # Only copy if target doesn't exist or is different from source
+    if [[ ! -e "${target_dir}" ]] || ! diff -r "${source_dir}" "${target_dir}" >/dev/null 2>&1; then
       run_step rm -rf "${target_dir}"
-    fi
-
-    run_step cp -R "${source_dir}" "${target_dir}"
-    if [[ "${DRY_RUN}" -eq 1 ]]; then
-      echo "Would sync ${provider} packaged skill: ${skill_name}"
+      run_step cp -R "${source_dir}" "${target_dir}"
+      if [[ "${DRY_RUN}" -eq 1 ]]; then
+        echo "Would sync ${provider} packaged skill: ${skill_name}"
+      else
+        echo "Synced ${provider} packaged skill: ${skill_name}"
+      fi
     else
-      echo "Synced ${provider} packaged skill: ${skill_name}"
+      if [[ "${DRY_RUN}" -eq 1 ]]; then
+        echo "[dry-run] Skill already up-to-date: ${skill_name}"
+      else
+        echo "Skill already up-to-date: ${skill_name}"
+      fi
     fi
   done
 }

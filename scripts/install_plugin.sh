@@ -198,7 +198,6 @@ install_codex() {
   mkdir -p "${marketplace_dir}"
 
   if [[ -f "${marketplace_path}" ]]; then
-    jq empty "${marketplace_path}" >/dev/null
     if jq -e --arg plugin_name "${PLUGIN_NAME}" '
       if type != "object" then
         error("Marketplace file must contain a JSON object")
@@ -209,7 +208,7 @@ install_codex() {
       else
         (.plugins // []) | any(.[]?; (type == "object") and .name == $plugin_name)
       end
-    ' "${marketplace_path}" >/dev/null; then
+    ' "${marketplace_path}" >/dev/null 2>&1; then
       marketplace_action="updated"
     fi
   fi
@@ -276,7 +275,7 @@ install_codex() {
           end
       )
     ' \
-    <(if [[ -f "${marketplace_path}" ]]; then cat "${marketplace_path}"; else printf 'null'; fi) \
+    "$(if [[ -f "${marketplace_path}" ]]; then cat "${marketplace_path}"; else printf 'null'; fi)" \
     > "${tmp_file}"
 
   mv "${tmp_file}" "${marketplace_path}"
