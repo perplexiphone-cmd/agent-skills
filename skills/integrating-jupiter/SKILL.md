@@ -4,7 +4,7 @@ description: Comprehensive guidance for integrating Jupiter APIs (Swap, Lend, Pe
 license: MIT
 metadata:
   author: jup-ag
-  version: "1.0.0"
+  version: "1.0.1"
 tags:
   - jupiter
   - jup-ag
