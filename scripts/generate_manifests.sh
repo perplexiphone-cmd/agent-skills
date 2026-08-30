@@ -52,21 +52,23 @@ generate_claude_plugin_json() {
     echo "jq is required to generate plugin.json" >&2
     return 1
   fi
-  
-  # Generate plugin manifest with all skills
+
+  # Generate plugin manifest with all skills.
   local skills_json="[]"
+  local skill
   for skill in "${SKILLS[@]}"; do
-    local skill_entry=$(jq -n \
+    local skill_entry
+    skill_entry="$(jq -n \
       --arg name "${skill}" \
       '{
         name: $name,
         description: "Jupiter \($name) skill",
         capabilities: ["read", "execute"]
-      }')
-    skills_json=$(echo "${skills_json}" | jq --argjson entry "${skill_entry}" '. += [$entry]')
+      }')"
+    skills_json="$(echo "${skills_json}" | jq --argjson entry "${skill_entry}" '. += [$entry]')"
   done
-  
-  # Create the marketplace manifest
+
+  # Create the marketplace manifest.
   jq -n \
     --arg name "${CLAUDE_MARKETPLACE_NAME}" \
     --arg display_name "${PLUGIN_NAME}" \

@@ -88,16 +88,17 @@ This document outlines 10 performance improvements identified and implemented fo
 - **Next Steps:** Publish references to documentation site, update manifests with URLs
 
 ### 7. **Normalize manifest generation from templates**
-- **Description:** Create script to generate `.mcp.json` and `plugin.json` from templates to reduce duplication.
+- **Description:** Create script to generate `.mcp.json` and `plugin.json` from templates to reduce duplication, and batch skill manifest assembly into a single JSON pass.
 - **Impact:** LOW-MEDIUM (reduces configuration drift)
 - **Effort:** MEDIUM
 - **Files Created:** `scripts/generate_manifests.sh`
 - **Key Changes:**
   - Automated generation of MCP manifests for each provider
   - Template-based Claude and Codex plugin manifests
+  - Batched skill array construction to avoid repeated jq subprocesses
   - Includes skill enumeration and documentation generation
   - Ensures consistency across variants
-- **Performance Benefit:** Faster, more reliable manifest generation; reduces manual editing errors
+- **Performance Benefit:** Faster, more reliable manifest generation; reduces manual editing errors and avoids repeated JSON rebuilds
 - **Dependencies:** Requires `jq` for JSON manipulation
 
 ### 8. **Fast validation mode for skill linting**
