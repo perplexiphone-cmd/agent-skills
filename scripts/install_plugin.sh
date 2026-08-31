@@ -114,6 +114,23 @@ check_jq_available() {
   [[ "${HAS_JQ}" -eq 1 ]]
 }
 
+compute_dir_checksum() {
+  local dir="$1"
+
+  if [[ ! -d "${dir}" ]]; then
+    echo "0"
+    return 0
+  fi
+
+  if command -v md5sum >/dev/null 2>&1; then
+    find "${dir}" -type f -exec md5sum {} \; 2>/dev/null | sort | md5sum | cut -d' ' -f1
+  elif command -v md5 >/dev/null 2>&1; then
+    find "${dir}" -type f -exec md5 {} \; 2>/dev/null | sort | md5 | cut -d' ' -f1
+  else
+    echo "1"
+  fi
+}
+
 read_json_name() {
   local file_path="$1"
 
@@ -186,8 +203,8 @@ install_codex() {
 
   if [[ -e "${target_dir}" ]]; then
     # Quick check: compare checksums to see if update is actually needed
-    source_checksum="$(find "${source_dir}" -type f -exec md5sum {} \; 2>/dev/null | sort | md5sum | cut -d' ' -f1 || echo "1")"
-    target_checksum="$(find "${target_dir}" -type f -exec md5sum {} \; 2>/dev/null | sort | md5sum | cut -d' ' -f1 || echo "2")"
+    source_checksum="$(compute_dir_checksum "${source_dir}")"
+    target_checksum="$(compute_dir_checksum "${target_dir}")"
     
     if [[ "${source_checksum}" == "${target_checksum}" ]] && [[ "${FORCE}" -ne 1 ]]; then
       # Plugin files are already up-to-date
