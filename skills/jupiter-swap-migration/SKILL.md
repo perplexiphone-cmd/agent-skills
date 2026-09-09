@@ -4,7 +4,7 @@ description: Migration guide from Jupiter Metis (v1) or Ultra to Swap API v2. Us
 license: MIT
 metadata:
   author: jup-ag
-  version: "1.0.0"
+  version: "1.0.1"
 tags:
   - jupiter
   - swap-migration
