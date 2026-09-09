@@ -300,7 +300,11 @@ install_codex() {
     jq -n "${jq_args[@]}" "${jq_filter}" > "${tmp_file}"
   fi
 
-  mv "${tmp_file}" "${marketplace_path}"
+  if [[ -f "${marketplace_path}" ]] && cmp -s "${tmp_file}" "${marketplace_path}"; then
+    rm -f "${tmp_file}"
+  else
+    mv "${tmp_file}" "${marketplace_path}"
+  fi
 
   if [[ "${should_copy}" -eq 1 ]]; then
     echo "Codex plugin ${plugin_action} at ${target_dir}"
