@@ -48,64 +48,49 @@ EOF
 generate_claude_plugin_json() {
   local output_file="$1"
   
-  if ! command -v jq >/dev/null 2>&1; then
-    echo "jq is required to generate plugin.json" >&2
-    return 1
-  fi
+  {
+    printf '{\n'
+    printf '  "name": "%s",\n' "${CLAUDE_MARKETPLACE_NAME}"
+    printf '  "displayName": "%s",\n' "${PLUGIN_NAME}"
+    printf '  "category": "%s",\n' "${PLUGIN_CATEGORY}"
+    printf '  "skills": [\n'
 
-  # Generate plugin manifest with all skills.
-  local skills_json="[]"
-  local skill
-  for skill in "${SKILLS[@]}"; do
-    local skill_entry
-    skill_entry="$(jq -n \
-      --arg name "${skill}" \
-      '{
-        name: $name,
-        description: "Jupiter \($name) skill",
-        capabilities: ["read", "execute"]
-      }')"
-    skills_json="$(echo "${skills_json}" | jq --argjson entry "${skill_entry}" '. += [$entry]')"
-  done
+    local skill=""
+    local first_skill=1
+    for skill in "${SKILLS[@]}"; do
+      if [[ "${first_skill}" -eq 0 ]]; then
+        printf ',\n'
+      fi
+      first_skill=0
+      printf '    {\n'
+      printf '      "name": "%s",\n' "${skill}"
+      printf '      "description": "Jupiter %s skill",\n' "${skill}"
+      printf '      "capabilities": ["read", "execute"]\n'
+      printf '    }'
+    done
 
-  # Create the marketplace manifest.
-  jq -n \
-    --arg name "${CLAUDE_MARKETPLACE_NAME}" \
-    --arg display_name "${PLUGIN_NAME}" \
-    --arg category "${PLUGIN_CATEGORY}" \
-    --argjson skills "${skills_json}" \
-    '{
-      name: $name,
-      displayName: $display_name,
-      category: $category,
-      skills: $skills
-    }' > "${output_file}"
+    printf '\n  ]\n'
+    printf '}\n'
+  } > "${output_file}"
   
   echo "Generated Claude plugin manifest: ${output_file}"
 }
 
 generate_codex_plugin_json() {
   local output_file="$1"
-  
-  if ! command -v jq >/dev/null 2>&1; then
-    echo "jq is required to generate plugin.json" >&2
-    return 1
-  fi
-  
-  # Generate Codex-specific plugin manifest
-  jq -n \
-    --arg name "${PLUGIN_NAME}" \
-    --arg category "${PLUGIN_CATEGORY}" \
-    '{
-      name: $name,
-      displayName: $name,
-      category: $category,
-      version: "1.0.0",
-      description: "Jupiter integration plugin for agent skills",
-      author: "Perplexiphone",
-      repository: "https://github.com/perplexiphone-cmd/agent-skills",
-      license: "MIT"
-    }' > "${output_file}"
+
+  {
+    printf '{\n'
+    printf '  "name": "%s",\n' "${PLUGIN_NAME}"
+    printf '  "displayName": "%s",\n' "${PLUGIN_NAME}"
+    printf '  "category": "%s",\n' "${PLUGIN_CATEGORY}"
+    printf '  "version": "1.0.0",\n'
+    printf '  "description": "Jupiter integration plugin for agent skills",\n'
+    printf '  "author": "Perplexiphone",\n'
+    printf '  "repository": "https://github.com/perplexiphone-cmd/agent-skills",\n'
+    printf '  "license": "MIT"\n'
+    printf '}\n'
+  } > "${output_file}"
   
   echo "Generated Codex plugin manifest: ${output_file}"
 }
