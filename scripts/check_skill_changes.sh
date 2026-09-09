@@ -28,29 +28,23 @@ SKILL_PATHS=(
 
 skill_files_changed() {
   local range="$1"
-  local diff_args=()
-  local changed_files=""
 
   # Check if we're looking at a range or working directory
   if [[ "${range}" == "." ]]; then
-    # Check staged and unstaged changes in one pass
-    changed_files="$(
-      {
-        git diff --name-only
-        git diff --cached --name-only
-      } 2>/dev/null
-    )"
-  else
-    # Check committed changes in range
-    diff_args=("${range}")
-    changed_files="$(git diff --name-only "${diff_args[@]}" 2>/dev/null)"
-  fi
-
-  for path in "${SKILL_PATHS[@]}"; do
-    if grep -q "^${path}" <<<"${changed_files}"; then
+    # Check staged and unstaged changes in one pass, but only for skill paths.
+    if ! git diff --quiet -- "${SKILL_PATHS[@]}" 2>/dev/null; then
       return 0
     fi
-  done
+
+    if ! git diff --cached --quiet -- "${SKILL_PATHS[@]}" 2>/dev/null; then
+      return 0
+    fi
+  else
+    # Check committed changes in range, filtered to skill paths only.
+    if ! git diff --quiet "${range}" -- "${SKILL_PATHS[@]}" 2>/dev/null; then
+      return 0
+    fi
+  fi
 
   return 1
 }
