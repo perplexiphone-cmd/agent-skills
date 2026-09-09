@@ -403,7 +403,7 @@ Production-ready code snippets. Each example uses the `jupiterFetch` helper from
 
 ## Fresh Context Policy
 
-Always fetch the freshest context from referenced docs/specs before executing a playbook.
+Fetch the freshest referenced docs/specs before executing a playbook.
 
 1. Resolve intent with `Intent Router`.
 2. Before coding, fetch the playbook's linked refs (overview + API-specific docs).
