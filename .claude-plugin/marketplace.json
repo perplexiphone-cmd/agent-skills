@@ -1,25 +1,27 @@
 {
-  "name": "jup-ag-skills",
-  "owner": {
-    "name": "jup-ag",
-    "email": "contact@jup.ag"
-  },
-  "metadata": {
-    "description": "Jupiter DeFi integration skills for Solana"
-  },
-  "plugins": [
+  "name": "integrate-jupiter-marketplace",
+  "displayName": "integrate-jupiter",
+  "category": "Developer Tools",
+  "skills": [
     {
-      "name": "integrate-jupiter",
-      "source": "./.plugins/integrate-jupiter/claude",
-      "description": "Jupiter integration and documentation skills for Solana, crypto, and finance workflows",
-      "version": "1.0.0",
-      "author": {
-        "name": "Jupiter"
-      },
-      "homepage": "https://jup.ag",
-      "repository": "https://github.com/jup-ag/agent-skills",
-      "license": "MIT",
-      "keywords": ["solana", "jupiter", "defi", "finance", "crypto", "documentation", "swap", "lend", "borrow", "earn", "perps", "trigger", "dex-aggregator"]
+      "name": "integrating-jupiter",
+      "description": "Jupiter integrating-jupiter skill",
+      "capabilities": ["read", "execute"]
+    },
+    {
+      "name": "jupiter-lend",
+      "description": "Jupiter jupiter-lend skill",
+      "capabilities": ["read", "execute"]
+    },
+    {
+      "name": "jupiter-swap-migration",
+      "description": "Jupiter jupiter-swap-migration skill",
+      "capabilities": ["read", "execute"]
+    },
+    {
+      "name": "jupiter-vrfd",
+      "description": "Jupiter jupiter-vrfd skill",
+      "capabilities": ["read", "execute"]
     }
   ]
 }
