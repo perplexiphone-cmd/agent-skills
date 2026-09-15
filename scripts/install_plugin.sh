@@ -180,6 +180,8 @@ read_claude_marketplace_source_path() {
   fi
 }
 
+# Install the packaged Codex plugin, update the local marketplace entry, and
+# avoid rewriting files when the source package is already current.
 install_codex() {
   require_jq
 
@@ -335,6 +337,8 @@ install_codex() {
   echo "Restart Codex, open /plugins, and install \`${PLUGIN_NAME}\` from your local marketplace."
 }
 
+# Register the repo as a Claude marketplace and install the plugin at the
+# configured scope without replacing unrelated marketplace entries.
 install_claude() {
   local manifest_path="${REPO_ROOT}/${CLAUDE_MARKETPLACE_MANIFEST_REL}"
   local marketplace_name=""
