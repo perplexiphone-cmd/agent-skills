@@ -7,7 +7,7 @@
     "url": "https://jup.ag"
   },
   "homepage": "https://jup.ag",
-  "repository": "https://github.com/jup-ag/agent-skills",
+  "repository": "https://github.com/perplexiphone-cmd/agent-skills",
   "license": "MIT",
   "keywords": ["solana", "jupiter", "defi", "finance", "crypto", "documentation", "swap", "lend", "borrow", "earn", "perps", "trigger", "dex-aggregator", "verification", "vrfd", "token-verification"]
 }

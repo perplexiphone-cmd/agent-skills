@@ -101,6 +101,8 @@ get_plugignore_excludes() {
   echo "${excludes}"
 }
 
+# Copy skill source folders into each provider bundle only when the checksums differ.
+# This keeps packaged plugins in sync without touching unrelated files.
 sync_provider() {
   local provider="$1"
   local plugin_root="${REPO_ROOT}/.plugins/${PLUGIN_NAME}/${provider}"
