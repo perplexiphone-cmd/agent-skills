@@ -101,8 +101,7 @@ get_plugignore_excludes() {
   echo "${excludes}"
 }
 
-# Copy skill source folders into each provider bundle only when the checksums differ.
-# This keeps packaged plugins in sync without touching unrelated files.
+# Copy skill source folders into each provider bundle.
 sync_provider() {
   local provider="$1"
   local plugin_root="${REPO_ROOT}/.plugins/${PLUGIN_NAME}/${provider}"
@@ -146,22 +145,14 @@ sync_provider() {
       exit 1
     fi
 
-    # Use checksum to detect if sync is needed (more efficient than always running diff -r)
-    if needs_sync "${source_dir}" "${target_dir}"; then
-      run_step rm -rf "${target_dir}"
-      run_step cp -R "${source_dir}" "${target_dir}"
-      if [[ "${DRY_RUN}" -eq 1 ]]; then
-        echo "Would sync ${provider} packaged skill: ${skill_name}"
-      else
-        echo "Synced ${provider} packaged skill: ${skill_name}"
-        any_synced=1
-      fi
+    # Re-sync unconditionally to avoid expensive recursive diffs; copy is cheaper than scanning trees.
+    run_step rm -rf "${target_dir}"
+    run_step cp -R "${source_dir}" "${target_dir}"
+    if [[ "${DRY_RUN}" -eq 1 ]]; then
+      echo "Would sync ${provider} packaged skill: ${skill_name}"
     else
-      if [[ "${DRY_RUN}" -eq 1 ]]; then
-        echo "[dry-run] Skill already up-to-date: ${skill_name}"
-      else
-        echo "Skill already up-to-date: ${skill_name}"
-      fi
+      echo "Synced ${provider} packaged skill: ${skill_name}"
+      any_synced=1
     fi
   done
   
