@@ -1,7 +1,7 @@
 {
-  "name": "jup-ag-skills",
+  "name": "local-plugins",
   "interface": {
-    "displayName": "Jupiter"
+    "displayName": "Local Plugins"
   },
   "plugins": [
     {

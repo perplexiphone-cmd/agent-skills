@@ -5,12 +5,12 @@ Jupiter integration skills for Solana — swap, lend, perps, trigger, and more.
 ## Installation
 
 This repository intentionally keeps the Codex plugin package at `./.plugins/integrate-jupiter/codex`.
-That path is what `.agents/plugins/marketplace.json` registers for Codex, so the plugin can live alongside the Claude package in the same repo.
+That path is what the local marketplace definition registers for Codex, so the repository can ship both Codex and Claude variants side by side.
 Use `bash scripts/install_plugin.sh` as the installer entrypoint for this packaged plugin.
 
 Install on your machine from GitHub:
 
-1. Clone the repository: `git clone https://github.com/jup-ag/agent-skills.git`
+1. Clone the repository: `git clone https://github.com/perplexiphone-cmd/agent-skills.git`
 2. Run `bash scripts/install_plugin.sh` from the cloned repo root.
 3. Choose `Codex` or `Both`.
 4. Restart Codex.
@@ -33,7 +33,7 @@ Repo-local install:
 1. Open this repository root in Codex.
 2. Restart Codex if the workspace was already open so Codex reloads the local marketplace definition.
 3. Open `/plugins`.
-4. Install `integrate-jupiter` from the `Jupiter` marketplace.
+4. Install `integrate-jupiter` from the local marketplace.
 
 Home-local install:
 
@@ -42,20 +42,21 @@ Home-local install:
 3. Restart Codex.
 4. Install `integrate-jupiter` from `/plugins`.
 
-## Included Skills
+## Included skills
 
 - **integrating-jupiter** — Comprehensive guide for all Jupiter APIs (Swap, Lend, Perps, Trigger, Recurring, Tokens, Price, Portfolio, etc.)
 - **jupiter-lend** — Deep SDK-level integration for Jupiter Lend earn, borrow, vaults, and jlTokens
 - **jupiter-swap-migration** — Migration guide from Metis (v1) or Ultra to Swap API v2
+- **jupiter-vrfd** — Verification and metadata submission workflow for Jupiter token verification
 
-## MCP Server
+## MCP server
 
 This plugin configures the [Jupiter MCP server](https://developers.jup.ag/docs/ai/mcp) — a read-only documentation server that exposes all Jupiter documentation and OpenAPI specs through the MCP protocol.
 
 ## Links
 
 - [jup.ag](https://jup.ag) — Jupiter
-- [Agent Skills](https://github.com/jup-ag/agent-skills) — Source repository
+- [Agent Skills](https://github.com/perplexiphone-cmd/agent-skills) — Source repository
 
 ## License
 

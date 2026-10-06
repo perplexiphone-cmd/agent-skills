@@ -2,6 +2,8 @@
 
 Skills for AI coding agents to integrate with Jupiter Lend protocol.
 
+This directory is the source-of-truth for the `jupiter-lend` skill. Packaged plugin copies under `.plugins/integrate-jupiter/{codex,claude}` are generated from this content during release or sync operations.
+
 ## What does the skill cover
 
 - **SKILL.md** - Main skill file with comprehensive integration guidance for Jupiter Lend (powered by Fluid Protocol)

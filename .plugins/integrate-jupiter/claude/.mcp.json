@@ -1,7 +1,11 @@
 {
   "mcpServers": {
-    "jupiter": {
-      "url": "https://developers.jup.ag/docs/mcp"
+    "integrate-jupiter": {
+      "command": "node",
+      "args": ["path/to/server.js"],
+      "env": {
+        "PLUGIN_PROVIDER": "claude"
+      }
     }
   }
 }

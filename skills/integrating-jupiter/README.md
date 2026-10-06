@@ -2,6 +2,8 @@
 
 Skills for AI coding agents in the Jupiter ecosystem.
 
+This directory is the source-of-truth for the `integrating-jupiter` package. The packaged provider bundles under `.plugins/integrate-jupiter/{codex,claude}` are synced from here by `scripts/sync_plugin_skills.sh`.
+
 ## What does the skill cover
 
 - **SKILL.md** - Main skill file with comprehensive integration guidance for all Jupiter APIs

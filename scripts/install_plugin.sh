@@ -14,6 +14,7 @@ PROVIDER=""
 CODEX_INSTALL_DIR="${HOME}/plugins"
 CODEX_MARKETPLACE_PATH="${HOME}/.agents/plugins/marketplace.json"
 CLAUDE_SCOPE="user"
+HAS_JQ=""
 
 usage() {
   cat <<'EOF'
@@ -102,10 +103,38 @@ prompt_provider() {
   done
 }
 
+check_jq_available() {
+  if [[ -z "${HAS_JQ}" ]]; then
+    if command -v jq >/dev/null 2>&1; then
+      HAS_JQ=1
+    else
+      HAS_JQ=0
+    fi
+  fi
+  [[ "${HAS_JQ}" -eq 1 ]]
+}
+
+compute_dir_checksum() {
+  local dir="$1"
+
+  if [[ ! -d "${dir}" ]]; then
+    echo "0"
+    return 0
+  fi
+
+  if command -v md5sum >/dev/null 2>&1; then
+    find "${dir}" -type f -exec md5sum {} \; 2>/dev/null | sort | md5sum | cut -d' ' -f1
+  elif command -v md5 >/dev/null 2>&1; then
+    find "${dir}" -type f -exec md5 {} \; 2>/dev/null | sort | md5 | cut -d' ' -f1
+  else
+    echo "1"
+  fi
+}
+
 read_json_name() {
   local file_path="$1"
 
-  if command -v jq >/dev/null 2>&1; then
+  if check_jq_available; then
     jq -r '.name // empty' "${file_path}"
   else
     sed -n 's/^[[:space:]]*"name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "${file_path}" | head -n 1
@@ -113,7 +142,7 @@ read_json_name() {
 }
 
 require_jq() {
-  if ! command -v jq >/dev/null 2>&1; then
+  if ! check_jq_available; then
     echo "jq is required for Codex installs." >&2
     exit 1
   fi
@@ -138,7 +167,7 @@ read_claude_marketplace_source_path() {
     return 0
   fi
 
-  if command -v jq >/dev/null 2>&1; then
+  if check_jq_available; then
     jq -r --arg marketplace_name "${marketplace_name}" '.[$marketplace_name].source.path // empty' "${state_path}"
   else
     awk -v marketplace="\"${marketplace_name}\"" '
@@ -151,6 +180,8 @@ read_claude_marketplace_source_path() {
   fi
 }
 
+# Install the packaged Codex plugin, update the local marketplace entry, and
+# avoid rewriting files when the source package is already current.
 install_codex() {
   require_jq
 
@@ -163,8 +194,9 @@ install_codex() {
   local should_copy=1
   local marketplace_action="added"
   local marketplace_dir=""
-  local entry_json=""
   local tmp_file=""
+  local source_checksum=""
+  local target_checksum=""
 
   if [[ ! -f "${manifest_path}" ]]; then
     echo "Codex plugin manifest not found: ${manifest_path}" >&2
@@ -172,11 +204,19 @@ install_codex() {
   fi
 
   if [[ -e "${target_dir}" ]]; then
-    if [[ "${FORCE}" -eq 1 ]]; then
+    # Quick check: compare checksums to see if update is actually needed
+    source_checksum="$(compute_dir_checksum "${source_dir}")"
+    target_checksum="$(compute_dir_checksum "${target_dir}")"
+
+    if [[ "${source_checksum}" == "${target_checksum}" ]] && [[ "${FORCE}" -ne 1 ]]; then
+      # Plugin files are already up-to-date
+      plugin_action="already up-to-date"
+      should_copy=0
+    elif [[ "${FORCE}" -eq 1 ]]; then
       rm -rf "${target_dir}"
       plugin_action="updated"
     elif [[ "${INTERACTIVE}" -eq 1 ]]; then
-      if confirm "Codex plugin already exists at ${target_dir}. Replace it? [y/N]" "N"; then
+      if confirm "Codex plugin is outdated at ${target_dir}. Replace it? [y/N]" "N"; then
         rm -rf "${target_dir}"
         plugin_action="updated"
       else
@@ -213,10 +253,15 @@ install_codex() {
     fi
   fi
 
-  entry_json="$(jq -n \
-    --arg plugin_name "${PLUGIN_NAME}" \
-    --arg plugin_category "${PLUGIN_CATEGORY}" \
-    '{
+  tmp_file="$(mktemp)"
+  local jq_args=(
+    --arg marketplace_name "${CODEX_MARKETPLACE_NAME}"
+    --arg marketplace_display_name "${CODEX_MARKETPLACE_DISPLAY_NAME}"
+    --arg plugin_name "${PLUGIN_NAME}"
+    --arg plugin_category "${PLUGIN_CATEGORY}"
+  )
+  local jq_filter='
+    {
       name: $plugin_name,
       source: {
         source: "local",
@@ -227,20 +272,8 @@ install_codex() {
         authentication: "ON_INSTALL"
       },
       category: $plugin_category
-    }'
-  )"
-
-  tmp_file="$(mktemp)"
-  if [[ -f "${marketplace_path}" ]]; then
-    cat "${marketplace_path}"
-  else
-    printf 'null\n'
-  fi | jq \
-    --arg marketplace_name "${CODEX_MARKETPLACE_NAME}" \
-    --arg marketplace_display_name "${CODEX_MARKETPLACE_DISPLAY_NAME}" \
-    --arg plugin_name "${PLUGIN_NAME}" \
-    --argjson entry "${entry_json}" \
-    '
+    } as $entry
+    |
     if . == null then
       {
         name: $marketplace_name,
@@ -278,20 +311,34 @@ install_codex() {
             $plugins + [$entry]
           end
       )
-    ' > "${tmp_file}"
+    '
 
-  mv "${tmp_file}" "${marketplace_path}"
+  if [[ -f "${marketplace_path}" ]]; then
+    jq "${jq_args[@]}" "${jq_filter}" "${marketplace_path}" > "${tmp_file}"
+  else
+    jq -n "${jq_args[@]}" "${jq_filter}" > "${tmp_file}"
+  fi
+
+  if [[ -f "${marketplace_path}" ]] && cmp -s "${tmp_file}" "${marketplace_path}"; then
+    rm -f "${tmp_file}"
+  else
+    mv "${tmp_file}" "${marketplace_path}"
+  fi
 
   if [[ "${should_copy}" -eq 1 ]]; then
     echo "Codex plugin ${plugin_action} at ${target_dir}"
   else
-    echo "Codex plugin ${plugin_action} at ${target_dir}; marketplace registration was still checked."
-    echo "Use --force to replace the existing plugin files."
+    echo "Codex plugin ${plugin_action} at ${target_dir}; skipping file copy."
+    if [[ "${plugin_action}" != "already up-to-date" ]]; then
+      echo "Use --force to replace the existing plugin files."
+    fi
   fi
   echo "Codex marketplace entry ${marketplace_action} in ${marketplace_path}"
   echo "Restart Codex, open /plugins, and install \`${PLUGIN_NAME}\` from your local marketplace."
 }
 
+# Register the repo as a Claude marketplace and install the plugin at the
+# configured scope without replacing unrelated marketplace entries.
 install_claude() {
   local manifest_path="${REPO_ROOT}/${CLAUDE_MARKETPLACE_MANIFEST_REL}"
   local marketplace_name=""

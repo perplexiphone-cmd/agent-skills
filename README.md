@@ -1,32 +1,41 @@
 # Agent Skills
 
-Skills for AI coding agents to integrate with the Jupiter ecosystem.
+Skills and packaged plugin metadata for Jupiter-focused AI agents.
 
-Skills follow the [Agent Skills](https://agentskills.io/) format.
+The repository follows the [Agent Skills](https://agentskills.io/) format and keeps the source-of-truth documentation under `skills/`, while provider-specific packaged installs live under `.plugins/integrate-jupiter/{codex,claude}`.
 
-## Plugins
+## Repository layout
 
-This repo intentionally packages agent-specific plugins under `.plugins/<plugin-name>/<agent>`.
-Use `bash scripts/install_plugin.sh` as the single installer entrypoint for packaged plugins in this repo.
-Run it from a cloned repo to install for Codex, Claude Code, or both. The installer is interactive by default and lets the user choose the provider during setup.
-For Codex, the marketplace entry points to `./.plugins/integrate-jupiter/codex` rather than the simpler `./plugins/<plugin-name>` layout so the same repository can ship both Codex and Claude variants side by side.
+- `skills/` — canonical skill content and examples
+- `.plugins/integrate-jupiter/codex/` — Codex plugin bundle used by the local marketplace installer
+- `.plugins/integrate-jupiter/claude/` — Claude Code plugin bundle and marketplace metadata
+- `scripts/install_plugin.sh` — install or update the packaged plugin for Codex, Claude Code, or both
+- `scripts/sync_plugin_skills.sh` — sync `skills/` into the packaged provider folders
+- `.agents/plugins/marketplace.json` and `.claude-plugin/marketplace.json` — local marketplace manifests used during development and installation
 
-### Install from GitHub
+## Install from GitHub
 
-Install on your machine from GitHub:
+```bash
+git clone https://github.com/perplexiphone-cmd/agent-skills.git
+cd agent-skills
+bash scripts/install_plugin.sh
+```
 
-1. Clone the repository: `git clone https://github.com/jup-ag/agent-skills.git`
-2. Run `bash scripts/install_plugin.sh` from the cloned repo root.
-3. Choose `Codex`, `Claude Code`, or `Both`.
-4. Follow the provider-specific next steps printed by the installer.
+The installer is interactive by default and lets you choose `codex`, `claude`, or `both`. For a non-interactive setup:
 
-### Manual provider installs
+```bash
+bash scripts/install_plugin.sh --provider codex
+bash scripts/install_plugin.sh --provider claude
+bash scripts/install_plugin.sh --provider both
+```
+
+## Manual provider installs
 
 Claude Code:
 
 ```bash
 claude plugin marketplace add /path/to/agent-skills
-claude plugin install integrate-jupiter@jup-ag-skills
+claude plugin install integrate-jupiter@integrate-jupiter-marketplace
 ```
 
 Codex:
@@ -35,63 +44,51 @@ Codex:
 bash scripts/install_plugin.sh --provider codex
 ```
 
-Repo-local install:
+Repo-local Codex install:
 
 1. Open this repository root in Codex.
-2. Restart Codex if the workspace was already open so it reloads `.agents/plugins/marketplace.json`.
+2. Restart Codex if the workspace was already open so it reloads the local marketplace definition.
 3. Open `/plugins`.
-4. Install `integrate-jupiter` from the `Jupiter` marketplace.
+4. Install `integrate-jupiter` from the local marketplace.
 
-The Codex marketplace entry intentionally resolves to `./.plugins/integrate-jupiter/codex`.
-
-## Available Skills
+## Available skills
 
 ### integrating-jupiter
 
-Helps agents integrate with the whole Jupiter Suite of APIs.
-
-#### Installation
+Covers the complete Jupiter API surface: swap, lend, perps, trigger, recurring buys, token metadata, pricing, portfolio, prediction markets, send, studio, lock, and routing.
 
 ```bash
-npx skills add jup-ag/agent-skills --skill "integrating-jupiter"
+npx skills add perplexiphone-cmd/agent-skills --skill "integrating-jupiter"
 ```
 
 ### jupiter-lend
 
-Helps agents integrate with Jupiter Lend protocol (powered by Fluid Protocol) — lending, borrowing, vaults, and jlTokens on Solana.
-
-#### Installation
+Deep integration guidance for Jupiter Lend, including earn, borrow, vault management, and jlToken workflows.
 
 ```bash
-npx skills add jup-ag/agent-skills --skill "jupiter-lend"
+npx skills add perplexiphone-cmd/agent-skills --skill "jupiter-lend"
 ```
 
 ### jupiter-vrfd
 
-Helps agents guide users through the Jupiter Token Verification express flow — submit verification requests, pay with JUP tokens, and check verification status.
-
-#### Installation
+Guidance for Jupiter token verification and metadata submission flows.
 
 ```bash
-npx skills add jup-ag/agent-skills --skill "jupiter-vrfd"
+npx skills add perplexiphone-cmd/agent-skills --skill "jupiter-vrfd"
 ```
 
 ### jupiter-swap-migration
 
-Helps agents migrate existing Jupiter integrations from Metis (v1) or Ultra to Swap API v2.
-
-#### Installation
+Migration guidance for older Metis and Ultra swap integrations moving to Swap API v2.
 
 ```bash
-npx skills add jup-ag/agent-skills --skill "jupiter-swap-migration"
+npx skills add perplexiphone-cmd/agent-skills --skill "jupiter-swap-migration"
 ```
 
-## Quick Install
-
-### Installation
+## Quick install
 
 ```bash
-npx skills add jup-ag/agent-skills
+npx skills add perplexiphone-cmd/agent-skills
 ```
 
 ## License

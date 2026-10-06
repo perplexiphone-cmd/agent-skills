@@ -1,0 +1,32 @@
+# Performance Improvement #10: Exclude non-runtime assets from plugin distribution
+# Files matching these patterns are not copied to plugin variant directories
+
+# Documentation that isn't needed at runtime
+*.md
+README*
+CHANGELOG*
+
+# Example files not needed in production
+examples/
+
+# Tests and test fixtures
+test/
+tests/
+*.test.*
+*.spec.*
+
+# Development artifacts
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# Source maps and debugging
+*.map
+
+# Package manager artifacts
+node_modules/
+.yarn/
+package-lock.json
+yarn.lock
