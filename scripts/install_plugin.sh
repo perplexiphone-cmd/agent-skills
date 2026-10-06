@@ -231,7 +231,11 @@ install_codex() {
   )"
 
   tmp_file="$(mktemp)"
-  jq \
+  if [[ -f "${marketplace_path}" ]]; then
+    cat "${marketplace_path}"
+  else
+    printf 'null\n'
+  fi | jq \
     --arg marketplace_name "${CODEX_MARKETPLACE_NAME}" \
     --arg marketplace_display_name "${CODEX_MARKETPLACE_DISPLAY_NAME}" \
     --arg plugin_name "${PLUGIN_NAME}" \
@@ -274,9 +278,7 @@ install_codex() {
             $plugins + [$entry]
           end
       )
-    ' \
-    "$(if [[ -f "${marketplace_path}" ]]; then cat "${marketplace_path}"; else printf 'null'; fi)" \
-    > "${tmp_file}"
+    ' > "${tmp_file}"
 
   mv "${tmp_file}" "${marketplace_path}"
 
