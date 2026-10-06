@@ -207,7 +207,7 @@ install_codex() {
     # Quick check: compare checksums to see if update is actually needed
     source_checksum="$(compute_dir_checksum "${source_dir}")"
     target_checksum="$(compute_dir_checksum "${target_dir}")"
-    
+
     if [[ "${source_checksum}" == "${target_checksum}" ]] && [[ "${FORCE}" -ne 1 ]]; then
       # Plugin files are already up-to-date
       plugin_action="already up-to-date"
